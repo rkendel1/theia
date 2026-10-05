@@ -1,0 +1,4 @@
+export class DefaultFeltDbServiceProxy {
+    // This proxy is intentionally minimal and uses the Theia JSON-RPC service infrastructure.
+    // Actual client access is provided via the infrastructure-bound FeltDbService symbol.
+}

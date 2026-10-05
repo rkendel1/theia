@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017 TypeFox and others.
+ * Copyright (C) 2026 Contributors to Theia.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,29 +14,44 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-export * from './types';
-export * from './disposable';
-export * from './reference';
-export * from './event';
-export * from './cancellation';
-export * from './command';
-export * from './menu';
-export * from './selection-service';
-export * from './objects';
-export * from './os';
-export * from './resource';
-export * from './contribution-provider';
-export * from './path';
-export * from './logger';
-export * from './messaging';
-export * from './message-service';
-export * from './message-service-protocol';
-export * from './progress-service';
-export * from './progress-service-protocol';
-export * from './selection';
-export * from './strings';
-export * from './application-error';
-export * from './lsp-types';
+import {
+    createPaxRealityFromProject,
+    discoverFlowContract,
+    evaluateFlowContract,
+    FlowContractSnapshot,
+    FlowEvaluationResult,
+    persistSnapshotToFeltDb,
+    ProjectRealitySnapshot
+} from '../common/flow-contract';
 
-import { environment } from '@theia/application-package/lib/environment';
-export { environment };
+export class FlowProjectService {
+    constructor(protected readonly projectRoot: string) { }
+
+    discover(): FlowContractSnapshot | undefined {
+        return discoverFlowContract(this.projectRoot);
+    }
+
+    createReality(): ProjectRealitySnapshot {
+        return createPaxRealityFromProject(this.projectRoot);
+    }
+
+    evaluate(): FlowEvaluationResult {
+        const contract = this.discover();
+        if (!contract) {
+            return { ok: false, drifts: [{
+                type: 'CONTRACT_DRIFT',
+                requirement: '.flow',
+                message: 'No authoritative .flow file was found for this project.'
+            }] };
+        }
+
+        const reality = this.createReality();
+        return evaluateFlowContract(contract, reality);
+    }
+
+    persist(snapshot: FlowContractSnapshot): void {
+        persistSnapshotToFeltDb(snapshot, {
+            append: (_entry: any) => undefined
+        });
+    }
+}
